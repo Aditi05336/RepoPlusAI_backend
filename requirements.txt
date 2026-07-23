@@ -1,0 +1,13 @@
+Flask
+flask-cors
+requests
+python-dotenv
+scikit-learn
+pandas
+numpy
+gunicorn
+Flask-SQLAlchemy
+psycopg2-binary
+bcrypt
+PyJWT
+Flask-Limiter
