@@ -105,7 +105,7 @@ def run_pre_deployment_checks():
     # -------------------------------------------------------------------
     print("\n6. VERIFYING LIVE GITHUB API, GROQ AI & PERFORMANCE TIMINGS...")
     t_start = time.time()
-    res_analyze = client.post("/api/analyze", json={"owner": "facebook", "repository": "react", "nocache": True})
+    res_analyze = client.post("/api/analyze", json={"owner": "facebook", "repository": "react", "nocache": True}, headers={"Authorization": f"Bearer {token}"})
     t_total = time.time() - t_start
     assert res_analyze.status_code == 200, f"Analyze failed: {res_analyze.get_json()}"
 
@@ -140,13 +140,13 @@ def run_pre_deployment_checks():
     # 8. INVALID & PRIVATE REPOSITORY TESTS
     # -------------------------------------------------------------------
     print("\n8. INVALID REPOSITORY TEST...")
-    res_invalid_repo = client.post("/api/analyze", json={"owner": "abcxyz123", "repository": "this_repo_should_not_exist"})
+    res_invalid_repo = client.post("/api/analyze", json={"owner": "abcxyz123", "repository": "this_repo_should_not_exist"}, headers={"Authorization": f"Bearer {token}"})
     assert res_invalid_repo.status_code in (404, 502), f"Expected 404/502, got {res_invalid_repo.status_code}"
     print(f"   [PASS] Invalid Repository -> HTTP {res_invalid_repo.status_code} cleanly handled without HTTP 500 crash")
     results["Invalid Repository"] = "PASS"
 
     print("\n9. PRIVATE REPOSITORY TEST...")
-    res_private_repo = client.post("/api/analyze", json={"owner": "github", "repository": "private-repo-does-not-exist-spec"})
+    res_private_repo = client.post("/api/analyze", json={"owner": "github", "repository": "private-repo-does-not-exist-spec"}, headers={"Authorization": f"Bearer {token}"})
     assert res_private_repo.status_code in (404, 403, 502), f"Expected 404/403, got {res_private_repo.status_code}"
     print(f"   [PASS] Private Repository -> HTTP {res_private_repo.status_code} gracefully caught")
     results["Private Repository"] = "PASS"
@@ -155,7 +155,7 @@ def run_pre_deployment_checks():
     # 10. SMALL REPOSITORY ML FALLBACK TEST
     # -------------------------------------------------------------------
     print("\n10. SMALL REPOSITORY ML TEST...")
-    res_small = client.post("/api/analyze", json={"owner": "3107Alok", "repository": "DocMind-AI", "nocache": True})
+    res_small = client.post("/api/analyze", json={"owner": "3107Alok", "repository": "DocMind-AI", "nocache": True}, headers={"Authorization": f"Bearer {token}"})
     assert res_small.status_code == 200, f"Small repo analyze failed: {res_small.get_json()}"
     small_method = res_small.get_json().get("data", {}).get("forecast", {}).get("method")
     assert small_method == "fallback", f"Expected fallback method for small repo, got {small_method}"
@@ -167,13 +167,14 @@ def run_pre_deployment_checks():
     # -------------------------------------------------------------------
     print("\n11. CACHE BYPASS TEST...")
     # First request with nocache=True
-    res_nocache = client.post("/api/analyze", json={"owner": "pallets", "repository": "flask", "nocache": True})
+    res_nocache = client.post("/api/analyze", json={"owner": "pallets", "repository": "flask", "nocache": True}, headers={"Authorization": f"Bearer {token}"})
     assert res_nocache.get_json().get("cached") == False or res_nocache.get_json().get("cached") is None
     print("   [PASS] Request with nocache=True -> 'cached': False")
 
     # Second request without nocache
-    res_cached = client.post("/api/analyze", json={"owner": "pallets", "repository": "flask"})
+    res_cached = client.post("/api/analyze", json={"owner": "pallets", "repository": "flask"}, headers={"Authorization": f"Bearer {token}"})
     assert res_cached.get_json().get("cached") == True, "Expected cached == True"
+    print("   [PASS] Request without nocache -> 'cached': True")
     print("   [PASS] Request without nocache -> 'cached': True")
     results["Cache Bypass"] = "PASS"
     results["Cache"] = "PASS"

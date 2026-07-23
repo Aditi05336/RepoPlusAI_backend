@@ -25,6 +25,7 @@ import github_api
 import ml_forecast
 from cache import build_repo_cache_key, cache
 from config import config
+from auth.utils import jwt_required
 from utils import GitHubAPIError, error_response, success_response
 
 logging.basicConfig(level=logging.INFO if not config.DEBUG else logging.DEBUG)
@@ -89,6 +90,7 @@ def register_routes(app: Flask) -> None:
         return jsonify(body), status
 
     @app.route("/api/analyze", methods=["POST"])
+    @jwt_required
     def analyze_repository():
         """
         Full analysis workflow:
