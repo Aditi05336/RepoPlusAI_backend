@@ -84,8 +84,13 @@ class Config:
         return _get_int("CACHE_TTL_SECONDS", 900)  # 15 minutes default
 
     @property
-    def CORS_ORIGIN(self) -> str:
-        return os.getenv("CORS_ORIGIN", "*")
+    def CORS_ORIGIN(self):
+        val = os.getenv("CORS_ORIGIN", "*")
+        if not val or val.strip() == "*":
+            return "*"
+        if "," in val:
+            return [v.strip() for v in val.split(",") if v.strip()]
+        return val.strip()
 
     @property
     def DATABASE_URL(self) -> str:

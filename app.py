@@ -33,7 +33,7 @@ logger = logging.getLogger("repopulse")
 
 def create_app() -> Flask:
     app = Flask(__name__)
-    CORS(app, resources={r"/api/*": {"origins": config.CORS_ORIGIN}})
+    CORS(app, resources={r"/*": {"origins": config.CORS_ORIGIN}})
 
     # Configure SQLAlchemy Database
     app.config["SQLALCHEMY_DATABASE_URI"] = config.DATABASE_URL
