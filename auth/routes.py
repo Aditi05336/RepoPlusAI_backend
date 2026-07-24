@@ -5,7 +5,7 @@ Flask API routes for authentication (Signup, Login, Logout, Profile verification
 """
 
 from flask import Blueprint, jsonify, request
-from auth.services import authenticate_user_service, get_user_profile_service, register_user_service
+from auth.services import authenticate_user_service, get_user_profile_service, register_user_service, update_username_service
 from auth.utils import jwt_required, decode_jwt_token
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
@@ -58,3 +58,23 @@ def get_current_user():
         return jsonify({"success": True, **result}), status_code
     else:
         return jsonify({"success": False, "error": result}), status_code
+
+
+@auth_bp.route("/username", methods=["PUT", "POST"])
+@jwt_required
+def update_username():
+    """
+    Update authenticated user's username.
+    Payload: { "username": "new_username" } or { "github_username": "new_username" }
+    """
+    user_id = int(request.user_token_payload.get("sub"))
+    payload = request.get_json(silent=True) or {}
+    new_username = payload.get("username") or payload.get("github_username") or payload.get("new_username")
+
+    success, result, status_code = update_username_service(user_id, new_username)
+
+    if success:
+        return jsonify({"success": True, **result}), status_code
+    else:
+        return jsonify({"success": False, "error": result}), status_code
+

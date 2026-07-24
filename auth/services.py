@@ -119,3 +119,45 @@ def get_user_profile_service(user_id: int) -> tuple[bool, dict | str, int]:
     if not user:
         return False, "User not found.", 404
     return True, {"user": user.to_dict()}, 200
+
+
+def update_username_service(user_id: int, new_username: str) -> tuple[bool, dict | str, int]:
+    """
+    Update the authenticated user's username in PostgreSQL DB.
+    Validates format, checks uniqueness, and saves to DB.
+    """
+    raw_username = (new_username or "").strip()
+    if not raw_username:
+        return False, "Username is required.", 400
+
+    clean_username = normalize_github_username(raw_username)
+    valid, err = validate_github_username(clean_username)
+    if not valid:
+        return False, err, 400
+
+    user = User.query.get(user_id)
+    if not user:
+        return False, "User not found.", 404
+
+    # If the username is unchanged for this user, return success
+    if user.github_username == clean_username:
+        return True, {"user": user.to_dict(), "message": "Username updated successfully."}, 200
+
+    # Check for duplicate username among other users
+    existing_user = User.query.filter(User.github_username == clean_username, User.id != user_id).first()
+    if existing_user:
+        return False, "Username is already taken.", 409
+
+    try:
+        user.github_username = clean_username
+        db.session.commit()
+        logger.info("Updated username for user id=%s to '%s'", user_id, clean_username)
+        return True, {"user": user.to_dict(), "message": "Username updated successfully."}, 200
+    except IntegrityError:
+        db.session.rollback()
+        return False, "Username is already taken.", 409
+    except Exception as exc:
+        db.session.rollback()
+        logger.exception("Failed to update username")
+        return False, "Internal server error while updating username.", 500
+

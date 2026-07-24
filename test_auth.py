@@ -101,6 +101,29 @@ class AuthTestCase(unittest.TestCase):
         self.assertFalse(data.get("success"))
         self.assertEqual(data.get("error"), "Invalid email or password.")
 
+    def test_05_update_username_success(self):
+        signup_res = self.client.post("/api/auth/signup", json={
+            "name": self.test_name,
+            "email": self.test_email,
+            "github_username": self.test_github,
+            "password": self.test_password,
+        })
+        token = signup_res.get_json()["token"]
+
+        new_username = f"updated-{str(uuid.uuid4())[:5]}"
+        res = self.client.put("/api/auth/username", json={"username": new_username}, headers={"Authorization": f"Bearer {token}"})
+        data = res.get_json()
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(data.get("success"))
+        self.assertEqual(data["user"]["github_username"], new_username)
+        self.assertEqual(data["user"]["username"], new_username)
+
+    def test_06_update_username_unauthorized(self):
+        res = self.client.put("/api/auth/username", json={"username": "unauthorized-user"})
+        self.assertEqual(res.status_code, 401)
+
 
 if __name__ == "__main__":
     unittest.main()
+

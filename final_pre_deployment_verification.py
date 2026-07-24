@@ -75,6 +75,15 @@ def run_pre_deployment_checks():
     assert res_me.status_code == 200, f"Me profile failed: {res_me.get_json()}"
     print(f"   [PASS] Protected Profile GET /api/auth/me -> Verified JWT Token for user {res_me.get_json()['user']['name']}")
 
+    # Update Username route (/api/auth/username)
+    new_uname = f"updated-{uid}"
+    res_update_uname = client.put("/api/auth/username", json={"username": new_uname}, headers={"Authorization": f"Bearer {token}"})
+    assert res_update_uname.status_code == 200, f"Update username failed: {res_update_uname.get_json()}"
+    assert res_update_uname.get_json()["user"]["github_username"] == new_uname, "Updated username mismatch"
+    print(f"   [PASS] Protected PUT /api/auth/username -> Username successfully updated in PostgreSQL to '{new_uname}'")
+    results["Update Username"] = "PASS"
+
+
     # Invalid Login Test
     print("\n3. INVALID LOGIN TEST...")
     res_bad_login = client.post("/api/auth/login", json={
