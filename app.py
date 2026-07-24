@@ -50,8 +50,11 @@ def create_app() -> Flask:
     with app.app_context():
         try:
             db.create_all()
+            db.session.execute(db.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(100);"))
+            db.session.commit()
             logger.info("Database tables initialized successfully in PostgreSQL.")
         except Exception as exc:
+            db.session.rollback()
             logger.warning("Could not auto-create database tables on startup: %s", exc)
 
     # Log any configuration warnings (missing tokens/keys) at startup.
