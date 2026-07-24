@@ -68,6 +68,7 @@ def register_user_service(data: dict) -> tuple[bool, dict | str, int]:
             name=clean_name,
             email=clean_email,
             github_username=clean_github,
+            username=clean_github,
         )
         user.set_password(raw_password)
 
@@ -115,7 +116,7 @@ def authenticate_user_service(data: dict) -> tuple[bool, dict | str, int]:
 
 def get_user_profile_service(user_id: int) -> tuple[bool, dict | str, int]:
     """Fetch user profile by user ID."""
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id) if hasattr(db.session, 'get') else User.query.get(user_id)
     if not user:
         return False, "User not found.", 404
     return True, {"user": user.to_dict()}, 200
@@ -123,8 +124,9 @@ def get_user_profile_service(user_id: int) -> tuple[bool, dict | str, int]:
 
 def update_username_service(user_id: int, new_username: str) -> tuple[bool, dict | str, int]:
     """
-    Update the authenticated user's username in PostgreSQL DB.
+    Update the authenticated user's application username in PostgreSQL DB.
     Validates format, checks uniqueness, and saves to DB.
+    Only user.username is updated; user.github_username and user.name remain untouched.
     """
     raw_username = (new_username or "").strip()
     if not raw_username:
@@ -135,23 +137,24 @@ def update_username_service(user_id: int, new_username: str) -> tuple[bool, dict
     if not valid:
         return False, err, 400
 
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id) if hasattr(db.session, 'get') else User.query.get(user_id)
     if not user:
         return False, "User not found.", 404
 
-    # If the username is unchanged for this user, return success
-    if user.github_username == clean_username:
+    # Current username
+    current_username = user.username or user.github_username
+    if current_username == clean_username:
         return True, {"user": user.to_dict(), "message": "Username updated successfully."}, 200
 
-    # Check for duplicate username among other users
-    existing_user = User.query.filter(User.github_username == clean_username, User.id != user_id).first()
+    # Check for duplicate application username among other users
+    existing_user = User.query.filter(User.username == clean_username, User.id != user_id).first()
     if existing_user:
         return False, "Username is already taken.", 409
 
     try:
-        user.github_username = clean_username
+        user.username = clean_username
         db.session.commit()
-        logger.info("Updated username for user id=%s to '%s'", user_id, clean_username)
+        logger.info("Updated username for user id=%s to '%s' (github_username remains '%s')", user_id, clean_username, user.github_username)
         return True, {"user": user.to_dict(), "message": "Username updated successfully."}, 200
     except IntegrityError:
         db.session.rollback()
@@ -160,4 +163,5 @@ def update_username_service(user_id: int, new_username: str) -> tuple[bool, dict
         db.session.rollback()
         logger.exception("Failed to update username")
         return False, "Internal server error while updating username.", 500
+
 

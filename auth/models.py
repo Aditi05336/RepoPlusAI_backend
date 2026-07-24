@@ -19,6 +19,7 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     github_username = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    username = db.Column(db.String(100), unique=True, nullable=True, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = db.Column(
@@ -53,7 +54,8 @@ class User(db.Model):
             "name": self.name,
             "email": self.email,
             "github_username": self.github_username,
-            "username": self.github_username,
+            "username": self.username if self.username else self.github_username,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
