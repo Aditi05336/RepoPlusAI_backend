@@ -116,8 +116,8 @@ class AuthTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertTrue(data.get("success"))
-        self.assertEqual(data["user"]["github_username"], new_username)
         self.assertEqual(data["user"]["username"], new_username)
+        self.assertEqual(data["user"]["github_username"], self.test_github)
 
     def test_06_update_username_unauthorized(self):
         res = self.client.put("/api/auth/username", json={"username": "unauthorized-user"})
